@@ -24,3 +24,5 @@
 deploy/data
 
 logs/
+
+config/.env
