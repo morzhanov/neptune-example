@@ -3,11 +3,10 @@ package config
 import "github.com/spf13/viper"
 
 type Config struct {
-	KafkaURL        string `mapstructure:"KAFKA_URL"`
-	MongoURL        string `mapstructure:"MONGO_URL"`
-	PostgresURL     string `mapstructure:"POSTGRES_URL"`
-	APIGWport       string `mapstructure:"APIGW_PORT"`
-	ProtocolVersion string `mapstructure:"PROTOCOL_VERSION"`
+	AWSAccessKeyID     string `mapstructure:"AWS_ACCESS_KEY_ID"`
+	AWSSecretAccessKey string `mapstructure:"AWS_SECRET_ACCESS_KEY"`
+	AWSRegion          string `mapstructure:"AWS_REGION"`
+	AWSNeptuneDBName   string `mapstructure:"AWS_NUPTUNE_DB_NAME"`
 }
 
 func NewConfig() (config *Config, err error) {
