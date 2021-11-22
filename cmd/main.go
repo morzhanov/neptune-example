@@ -2,14 +2,11 @@ package main
 
 import (
 	"log"
-	"os"
-	"os/signal"
 
-	api "github.com/morzhanov/async-api/api/apigw"
-	"github.com/morzhanov/async-api/internal/apigw"
-	"github.com/morzhanov/async-api/internal/config"
-	"github.com/morzhanov/async-api/internal/logger"
-	"github.com/morzhanov/async-api/internal/mq"
+	"github.com/morzhanov/neptune-example/internal/config"
+	"github.com/morzhanov/neptune-example/internal/db"
+	"github.com/morzhanov/neptune-example/internal/logger"
+	"github.com/morzhanov/neptune-example/internal/service"
 	"go.uber.org/zap"
 )
 
@@ -26,21 +23,11 @@ func main() {
 	}
 	c, err := config.NewConfig()
 	failOnError(l, "config", err)
+	d, err := db.NewDB(c)
+	failOnError(l, "neptune database", err)
 
-	err = api.Build(c.KafkaURL, "kafka", c.ProtocolVersion)
-	failOnError(l, "api", err)
-	createOrderMq, err := mq.NewMq(c.KafkaURL, "order.create")
-	failOnError(l, "message_queue", err)
-	processOrderMq, err := mq.NewMq(c.KafkaURL, "order.process")
-	failOnError(l, "message_queue", err)
-
-	client := apigw.NewClient(createOrderMq, processOrderMq)
-	srv := apigw.NewController(client, l)
-	go srv.Listen(c.APIGWport)
-
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-	log.Println("App successfully started!")
-	<-quit
-	log.Println("received os.Interrupt, exiting...")
+	srv := service.NewService(d, l)
+	if err := srv.Run(); err != nil {
+		failOnError(l, "service", err)
+	}
 }

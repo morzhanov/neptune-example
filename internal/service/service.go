@@ -3,14 +3,9 @@ package service
 import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/morzhanov/neptune-example/internal/db"
+	"github.com/northwesternmutual/grammes/model"
 	"go.uber.org/zap"
 )
-
-// TODO: implement service which:
-//		creates/updates/deletes neptune vertexes and edges
-//		logs all operations
-
-// TODO: service should receive DB as a dependency
 
 type Service interface {
 	Run() error
@@ -40,90 +35,61 @@ func generateReader() *db.Reader {
 }
 
 func (s *service) logAllResources() error {
-	authors, err := s.db.GetAuthors()
+	traversal, err := s.db.Traversal()
 	if err != nil {
 		return err
 	}
-	books, err := s.db.GetBooks()
-	if err != nil {
-		return err
-	}
-	readers, err := s.db.GetReaders()
-	if err != nil {
-		return err
-	}
-	s.log.Info("Authors:")
-	for _, a := range authors {
-		s.log.Sugar().Info(a)
-	}
-	s.log.Info("Books:")
-	for _, b := range books {
-		s.log.Sugar().Info(b)
-	}
-	s.log.Info("Readers:")
-	for _, r := range readers {
-		s.log.Sugar().Info(r)
+	s.log.Info("Graph Traversal: ")
+	for _, t := range traversal {
+		s.log.Sugar().Info(string(t))
 	}
 	return nil
 }
 
-func (s *service) clearResources(authors []*db.Author, books []*db.Book, readers []*db.Reader) error {
-	for _, a := range authors {
-		if err := s.db.DeleteAuthor(a.ID); err != nil {
-			return err
-		}
-	}
-	for _, b := range books {
-		if err := s.db.DeleteAuthor(b.Title); err != nil {
-			return err
-		}
-	}
-	for _, r := range readers {
-		if err := s.db.DeleteAuthor(r.ID); err != nil {
-			return err
-		}
-	}
-	return nil
+func (s *service) clearResources() error {
+	return s.db.ClearResources()
 }
 
 func (s *service) Run() error {
-	var authors []*db.Author
-	var books []*db.Book
-	var readers []*db.Reader
+	var authors []*model.Vertex
+	var books []*model.Vertex
+	var readers []*model.Vertex
 
 	for i := 0; i <= 3; i++ {
 		a := generateAuthor()
-		authors = append(authors, a)
-		if err := s.db.AddAuthor(a); err != nil {
+		res, err := s.db.AddAuthor(a)
+		if err != nil {
 			return err
 		}
+		authors = append(authors, res)
 	}
 	s.log.Info("Authors generated and saved to the database...")
 
 	for i := 0; i <= 3; i++ {
 		b := generateBook()
-		books = append(books, b)
-		if err := s.db.AddBook(b, authors[i]); err != nil {
+		res, err := s.db.AddBook(b, &authors[i])
+		if err != nil {
 			return err
 		}
+		books = append(books, res)
 	}
 	s.log.Info("Books generated and saved to the database...")
 
 	for i := 0; i <= 3; i++ {
 		r := generateReader()
-		readers = append(readers, r)
-		if err := s.db.AddReader(r); err != nil {
+		res, err := s.db.AddReader(r)
+		if err != nil {
 			return err
 		}
+		readers = append(readers, res)
 	}
 	s.log.Info("Readers generated and saved to the database...")
 	if err := s.logAllResources(); err != nil {
 		return err
 	}
 
-	updatedBook := *books[0]
-	updatedBook.Title = "New Title"
-	if err := s.db.UpdateBook(books[0].Title, &updatedBook); err != nil {
+	updatedBook := generateBook()
+	if err := s.db.UpdateBook(books[0].ID(), updatedBook); err != nil {
 		return err
 	}
 	s.log.Info("Updated book...")
@@ -131,7 +97,7 @@ func (s *service) Run() error {
 		return err
 	}
 
-	if err := s.clearResources(authors, books, readers); err != nil {
+	if err := s.clearResources(); err != nil {
 		return err
 	}
 	s.log.Info("All Resources destroyed...")

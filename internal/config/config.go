@@ -3,10 +3,7 @@ package config
 import "github.com/spf13/viper"
 
 type Config struct {
-	AWSAccessKeyID     string `mapstructure:"AWS_ACCESS_KEY_ID"`
-	AWSSecretAccessKey string `mapstructure:"AWS_SECRET_ACCESS_KEY"`
-	AWSRegion          string `mapstructure:"AWS_REGION"`
-	AWSNeptuneDBName   string `mapstructure:"AWS_NUPTUNE_DB_NAME"`
+	AWSNeptuneDBUrl string `mapstructure:"AWS_NUPTUNE_DB_URL"`
 }
 
 func NewConfig() (config *Config, err error) {
